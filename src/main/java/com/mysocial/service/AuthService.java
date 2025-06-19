@@ -69,12 +69,14 @@ public class AuthService {
 
     public ApiResponse logoutUserHandler() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        return null;
     }
 
     public Authentication authenticated(String email, String password) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
         if(!passwordEncoder.matches(password, userDetails.getPassword())){
-            throw new InvalidCredentialsException("Invalid user name or password");
+            throw new InvalidCredentialsException("Invalid username or password");
         }
         Authentication authentication = new UsernamePasswordAuthenticationToken(email, password);
         return authentication;

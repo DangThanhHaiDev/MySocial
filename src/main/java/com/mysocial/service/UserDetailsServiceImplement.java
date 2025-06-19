@@ -4,7 +4,6 @@ import com.mysocial.exception.auth.InvalidCredentialsException;
 import com.mysocial.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,12 +21,10 @@ public class UserDetailsServiceImplement implements UserDetailsService {
         com.mysocial.model.User user = null;
         try {
             optionalUser = userRepository.findByEmail(username);
-            if(!optionalUser.isPresent()){
-                throw new InvalidCredentialsException("User not found with Email: "+username);
-            }
+            System.out.println("-----------Đã qua dòng này---------------");
             user = optionalUser.get();
         }catch (Exception e){
-
+            throw new InvalidCredentialsException("User not found with Email: "+username);
         }
         return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(),new ArrayList<GrantedAuthority>());
     }

@@ -79,8 +79,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleGenericException(Exception ex) {
         ValidationErrorResponse errorResponse = ValidationErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("An unexpected error occurred")
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message(ex.getMessage())
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
