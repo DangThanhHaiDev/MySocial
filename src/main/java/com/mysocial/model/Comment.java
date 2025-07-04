@@ -1,5 +1,6 @@
 package com.mysocial.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,4 +22,13 @@ public class Comment {
     private boolean isDeleted;
     private String image;
     private String sticker;
+
+    @ManyToOne
+    @JoinColumn(name = "post_id")
+    @JsonIgnore
+    private Post post;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }

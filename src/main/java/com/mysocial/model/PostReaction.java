@@ -1,5 +1,6 @@
 package com.mysocial.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +24,7 @@ public class PostReaction {
     private Reaction reaction;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "post_id")
     private Post post;
 
