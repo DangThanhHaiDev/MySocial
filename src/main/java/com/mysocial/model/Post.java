@@ -23,12 +23,23 @@ public class Post {
     private String location;
     private LocalDateTime createdAt;
     private boolean isDeleted;
+    private boolean isAvatar = false;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnore
     private User user;
 
     @OneToMany(mappedBy = "post")
     private List<PostReaction> reactions;
+
+    @OneToMany(mappedBy = "post")
+    private List<Comment> comments;
+
+    @Enumerated
+    private Privacy privacy;
+    public enum Privacy {
+        PUBLIC,
+        FRIENDS,
+        PRIVATE
+    }
 }

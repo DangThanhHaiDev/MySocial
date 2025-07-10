@@ -24,6 +24,7 @@ public class AppConfig {
                 .formLogin(loginSecurity -> {})
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/**").authenticated()
+
                         .anyRequest().permitAll())
                 .httpBasic(httpSecurityHttpBasicConfigurer -> {})
                 .cors(corsSecurity -> corsSecurity.configurationSource(new CorsConfigurationSource() {
@@ -33,7 +34,7 @@ public class AppConfig {
                         corsConfiguration.setAllowedHeaders(Collections.singletonList("*"));
                         corsConfiguration.setExposedHeaders(Arrays.asList("Authorization"));
                         corsConfiguration.setAllowedMethods(Collections.singletonList("*"));
-                        corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:2207", "http://localhost:3000", "https://deloy-ecommerce-frontend.vercel.app/"));
+                        corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:2208", "http://localhost:3000", "https://deloy-ecommerce-frontend.vercel.app/"));
                         corsConfiguration.setAllowCredentials(true);
                         corsConfiguration.setMaxAge(3600L);
                         return corsConfiguration;

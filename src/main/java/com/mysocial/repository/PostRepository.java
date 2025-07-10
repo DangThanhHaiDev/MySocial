@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
-    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.isDeleted = false")
+    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.isDeleted = false ORDER BY p.createdAt DESC")
     List<Post> findPostsByUserId(@Param("userId") Long userId);
+
 }

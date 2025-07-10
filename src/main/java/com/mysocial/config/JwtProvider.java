@@ -22,8 +22,15 @@ public class JwtProvider {
         return jwt;
     }
     public String getEmailFromToken(String jwt){
-        jwt = jwt.substring(7);
+        if(jwt.startsWith("Bearer")){
+            jwt = jwt.substring(7);
+
+        }
         Claims claims = Jwts.parser().setSigningKey(secretKey).build().parseClaimsJws(jwt).getBody();
         return String.valueOf(claims.get("email"));
+    }
+
+    public SecretKey getSecretKey(){
+        return secretKey;
     }
 }

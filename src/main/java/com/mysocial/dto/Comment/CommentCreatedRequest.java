@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentCreatedRequest {
-    private String content;
     private Long id;
+    private String content;
+    private Long parentId;
 }

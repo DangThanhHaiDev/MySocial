@@ -23,4 +23,21 @@ public class ReactionService {
     public List<Reaction> getAllReaction(){
         return reactionRepository.findAll();
     }
+    
+    // Tạo các reaction cố định
+    public void initializeDefaultReactions() {
+        if (reactionRepository.count() == 0) {
+            createReactionHandler("Tim", "LOVE", "/icon/heart.png");
+            createReactionHandler("Haha", "HAHA", "/icon/haha.png");
+            createReactionHandler("Buồn", "SAD", "/icon/sad.png");
+            createReactionHandler("Giận", "ANGRY", "/icon/angry.png");
+            createReactionHandler("Wow", "WOW", "/icon/wow.png");
+            createReactionHandler("Like", "LIKE", "/icon/like.png");
+        }
+    }
+    
+    // Lấy reaction theo type
+    public Reaction getReactionByType(String reactionType) {
+        return reactionRepository.findByReactionType(reactionType).orElse(null);
+    }
 }

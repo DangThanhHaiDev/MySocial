@@ -12,10 +12,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserInfoResponse {
     private Long id;
+    private String phone;
     private String email;
     private String firstName;
     private String lastName;
     private LocalDateTime birthDate;
     private boolean gender;
     private User.Role role;
+    private String avatarUrl;
+    private String biography;
+    private String address;
 }

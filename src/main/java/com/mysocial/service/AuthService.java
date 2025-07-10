@@ -50,8 +50,8 @@ public class AuthService {
         RegisterResponse response = new RegisterResponse();
         response.setStatus(201);
         response.setTimestamp(LocalDateTime.now());
-        response.setUser(new UserInfoResponse(userSaved.getId(), userSaved.getEmail(), userSaved.getFirstName(),
-                userSaved.getLastName(), userSaved.getBirthDate(), userSaved.isGender(), userSaved.getRole()));
+        response.setUser(new UserInfoResponse(userSaved.getId(), userSaved.getPhone(), userSaved.getEmail(), userSaved.getFirstName(),
+                userSaved.getLastName(), userSaved.getBirthDate(), userSaved.isGender(), userSaved.getRole(), user.getAvatarUrl(), user.getBiography(), user.getAddress()));
         response.setMessage("User registration successful!");
 
         return response;
@@ -61,8 +61,8 @@ public class AuthService {
         Authentication authentication = authenticated(request.getEmail(), request.getPassword());
         String token = jwtProvider.generateToken(authentication);
         User user = userRepository.findByEmail(request.getEmail()).get();
-        LoginResponse response = new LoginResponse(200, "Login success", token, new UserInfoResponse(user.getId(), user.getEmail(), user.getFirstName(),
-                user.getLastName(), user.getBirthDate(), user.isGender(), user.getRole()));
+        LoginResponse response = new LoginResponse(200, "Login success", token, new UserInfoResponse(user.getId(),user.getPhone(), user.getEmail(), user.getFirstName(),
+                user.getLastName(), user.getBirthDate(), user.isGender(), user.getRole(), user.getAvatarUrl(), user.getBiography(), user.getAddress()));
         return response;
 
     }
