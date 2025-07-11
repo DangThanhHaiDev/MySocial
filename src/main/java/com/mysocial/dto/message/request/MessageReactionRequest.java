@@ -11,6 +11,6 @@ public class MessageReactionRequest {
     private Long reactionId;
     private Long messageId;
     private Long receiverId;
-
+    private Long groupId;
 }
 

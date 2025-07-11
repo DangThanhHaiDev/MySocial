@@ -45,13 +45,15 @@ public class PostController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @GetMapping
-    public List<PostResponse> getAllPosts(@RequestHeader(value = "Authorization", required = false) String jwt){
+    @GetMapping("")
+    public List<PostResponse> getAllPosts(@RequestHeader(value = "Authorization", required = false) String jwt,
+                                          @RequestParam(defaultValue = "0") int page,
+                                          @RequestParam(defaultValue = "5") int size){
         User user = null;
         if (jwt != null && !jwt.isEmpty()) {
             user = userService.findUserProfileByJwt(jwt);
         }
-        return postService.getAllPostResponses(user);
+        return postService.getUserFeed(user, page, size);
     }
 
     @GetMapping("/user")

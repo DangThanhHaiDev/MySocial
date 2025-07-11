@@ -1,5 +1,6 @@
 package com.mysocial.controller;
 
+import com.mysocial.model.User;
 import com.mysocial.service.MessageService;
 import com.mysocial.service.UserService;
 import jakarta.persistence.Entity;
@@ -30,5 +31,11 @@ public class MessageController {
         Long userId = userService.getUserIdFromToken(jwt);
         List<ConversationSummary> conversations = messageService.getConversationsForUser(userId);
         return ResponseEntity.ok(conversations);
+    }
+
+    @GetMapping("/group")
+    public ResponseEntity<?> getGroupConversationForUser(@RequestHeader("Authorization") String jwt){
+        User user = userService.findUserProfileByJwt(jwt);
+        return ResponseEntity.ok(messageService.getGroupConversationForUser(user));
     }
 }

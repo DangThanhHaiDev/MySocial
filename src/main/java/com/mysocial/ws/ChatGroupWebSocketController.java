@@ -6,30 +6,23 @@ import com.mysocial.dto.message.request.MessageReactionDTO;
 import com.mysocial.dto.message.request.MessageReactionRequest;
 import com.mysocial.dto.message.request.MessageRequest;
 import com.mysocial.dto.message.response.ReactionDeletedResponse;
+import com.mysocial.model.GroupMember;
 import com.mysocial.model.Message;
 import com.mysocial.model.MessageReaction;
 import com.mysocial.model.User;
 import com.mysocial.repository.MessageReactionRepository;
 import com.mysocial.repository.MessageRepository;
-import com.mysocial.service.FileService;
-import com.mysocial.service.MessageReactionService;
-import com.mysocial.service.MessageService;
-import com.mysocial.service.UserService;
+import com.mysocial.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-public class ChatWebSocketController {
+public class ChatGroupWebSocketController {
     @Autowired
     private MessageService messageService;
     @Autowired
@@ -46,47 +39,47 @@ public class ChatWebSocketController {
     private MessageReactionRepository messageReactionRepository;
     @Autowired
     private FileService fileService;
+    @Autowired
+    private GroupService groupService;
 
-    @MessageMapping("/messages")
+    @MessageMapping("/messages/group")
     public void send(MessageRequest request, org.springframework.messaging.Message<?> message) {
         java.util.Map<String, Object> sessionAttributes = (java.util.Map<String, Object>) message.getHeaders().get("simpSessionAttributes");
         String jwt = (String) sessionAttributes.get("token");
         User sender = userService.findUserProfileByJwt(jwt);
         String fileUrl= null;
         if (request.getFileBase64() != null && request.getFileName() != null) {
-             fileUrl = fileService.saveBase64File(request.getFileBase64(), request.getFileName());
+            fileUrl = fileService.saveBase64File(request.getFileBase64(), request.getFileName());
         }
         ApiResponse<Message> response = messageService.saveMessage(request, sender, fileUrl);
         // Gửi realtime đến cả sender và receiver qua topic riêng
-        if (request.getReceiverId() != null) {
-            String topicSender = "/topic/messages/" + sender.getId() + "/" + request.getReceiverId();
-            String topicReceiver = "/topic/messages/" + request.getReceiverId() + "/" + sender.getId();
-            messagingTemplate.convertAndSend(topicSender, response);
+            String topicReceiver = "/topic/messages/group/" + request.getGroupId();
             messagingTemplate.convertAndSend(topicReceiver, response);
-            // Gửi thông báo cập nhật hội thoại cho cả 2 user
-            messagingTemplate.convertAndSend("/topic/conversations/" + sender.getId(), "update");
-            messagingTemplate.convertAndSend("/topic/conversations/" + request.getReceiverId(), "update");
+
+            List<GroupMember> memberList = groupService.getMembers(request.getGroupId());
+
+            //Gửi thông báo đến tất cả các user của cuộc hội thoại
+        for (GroupMember member: memberList) {
+            messagingTemplate.convertAndSend("/topic/conversations/group/" + member.getUser().getId(), "update");
         }
     }
-
-    @MessageMapping("/messages/revoke")
+    @MessageMapping("/messages/group/revoke")
     public void revokeMessage(org.springframework.messaging.Message<?> message, @org.springframework.messaging.handler.annotation.Payload Long messageId) {
         java.util.Map<String, Object> sessionAttributes = (java.util.Map<String, Object>) message.getHeaders().get("simpSessionAttributes");
         String jwt = (String) sessionAttributes.get("token");
         User sender = userService.findUserProfileByJwt(jwt);
         ApiResponse<Message> response = messageService.revokeMessage(messageId, sender);
         Message revoked = response.getData();
-        if (revoked.getReceiver() != null) {
-            String topicSender = "/topic/messages/" + sender.getId() + "/" + revoked.getReceiver().getId();
-            String topicReceiver = "/topic/messages/" + revoked.getReceiver().getId() + "/" + sender.getId();
-            messagingTemplate.convertAndSend(topicSender,
-                java.util.Map.of("action", "revoke", "messageId", revoked.getId()));
+            String topicReceiver = "/topic/messages/group/" + revoked.getGroup().getId();
+
             messagingTemplate.convertAndSend(topicReceiver,
-                java.util.Map.of("action", "revoke", "messageId", revoked.getId()));
+                    java.util.Map.of("action", "revoke", "messageId", revoked.getId()));
+        List<GroupMember> memberList = groupService.getMembers(revoked.getGroup().getId());
+        for (GroupMember member: memberList) {
+            messagingTemplate.convertAndSend("/topic/conversations/group/" + member.getUser().getId(), "update");
         }
     }
-
-    @MessageMapping("/messages/reaction")
+    @MessageMapping("/messages/reaction/group")
     public void reactionMessage(
             MessageReactionRequest request,
             org.springframework.messaging.Message<?> message) {
@@ -114,26 +107,23 @@ public class ChatWebSocketController {
 
         // Nếu có người nhận thì gửi realtime đến cả 2 phía
         Long receiverId = request.getReceiverId();
-        if (receiverId != null) {
-            String topicSender = "/topic/messages/" + sender.getId() + "/" + receiverId;
-            String topicReceiver = "/topic/messages/" + receiverId + "/" + sender.getId();
+            String topicReceiver = "/topic/messages/group/" + request.getGroupId();
 
             Map<String, Object> payload = Map.of(
                     "action", "reaction",
                     "data", dto
             );
 
-            messagingTemplate.convertAndSend(topicSender, payload);
             messagingTemplate.convertAndSend(topicReceiver, payload);
 
-            // Gửi tín hiệu cập nhật hội thoại
-            messagingTemplate.convertAndSend("/topic/conversations/" + sender.getId(), "react");
-            messagingTemplate.convertAndSend("/topic/conversations/" + receiverId, "react");
+
+        List<GroupMember> memberList = groupService.getMembers(request.getGroupId());
+        for (GroupMember member: memberList) {
+            messagingTemplate.convertAndSend("/topic/conversations/group/" + member.getUser().getId(), "update");
         }
     }
 
-
-    @MessageMapping("/messages/reaction/delete")
+    @MessageMapping("/messages/reaction/delete/group")
     public void deleteReaction(
             MessageDeletedReactionRequest request,
             org.springframework.messaging.Message<?> message){
@@ -147,8 +137,9 @@ public class ChatWebSocketController {
                 .orElseThrow(() -> new RuntimeException("Reaction not found"));
         Message message1 = messageRepository.findById(request.getMessageId()).orElseThrow();
         messageReactionService.deleteEmotion(request.getMessageReactionId());
-        String topicSender = "/topic/messages/" + sender.getId() + "/" + request.getReceiverId();
-        String topicReceiver = "/topic/messages/" + request.getReceiverId() + "/" + sender.getId();
+
+
+        String topicReceiver = "/topic/messages/group/" + request.getGroupId();
         ReactionDeletedResponse response = new ReactionDeletedResponse();
         response.setReactionId(request.getMessageReactionId());
         response.setMessageId(request.getMessageId());
@@ -157,33 +148,14 @@ public class ChatWebSocketController {
                 "data", response
         );
 
-        messagingTemplate.convertAndSend(topicSender, payload);
         messagingTemplate.convertAndSend(topicReceiver, payload);
 
         // Gửi tín hiệu cập nhật hội thoại
-        messagingTemplate.convertAndSend("/topic/conversations/" + sender.getId(), "react");
-        messagingTemplate.convertAndSend("/topic/conversations/" + request.getReceiverId(), "react");
-
+        List<GroupMember> memberList = groupService.getMembers(request.getGroupId());
+        for (GroupMember member: memberList) {
+            messagingTemplate.convertAndSend("/topic/conversations/group/" + member.getUser().getId(), "react");
+        }
     }
 
-    @GetMapping("/api/messages/history")
-    public List<Message> getHistory(@RequestHeader("Authorization") String jwt,
-                                    @RequestParam Long userId,
-                                    @RequestParam(required = false) Long beforeMessageId,
-                                    @RequestParam(defaultValue = "20") int size) {
-        User me = userService.findUserProfileByJwt(jwt);
-        LocalDateTime now = LocalDateTime.now();
-        messageService.markMessagesAsSeen(me.getId(), userId, now);
-        return messageService.getMessagesBetweenUsersPaged(me.getId(), userId, beforeMessageId, size);
-    }
-    @GetMapping("/api/messages/history/group")
-    public List<Message> getHistoryGroup(@RequestHeader("Authorization") String jwt,
-                                    @RequestParam Long groupId,
-                                    @RequestParam(required = false) Long beforeMessageId,
-                                    @RequestParam(defaultValue = "20") int size) {
-        User me = userService.findUserProfileByJwt(jwt);
-        LocalDateTime now = LocalDateTime.now();
-        messageService.markMessagesAsSeenGroup(me.getId(), groupId);
-        return messageService.getMessagesBetweenUsersPagedGroup(me, groupId, beforeMessageId, size);
-    }
+
 }

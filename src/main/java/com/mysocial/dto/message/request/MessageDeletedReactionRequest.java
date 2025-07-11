@@ -11,4 +11,5 @@ public class MessageDeletedReactionRequest {
     private Long messageReactionId;
     private Long receiverId;
     private Long messageId;
+    private Long groupId;
 }

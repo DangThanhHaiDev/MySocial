@@ -3,13 +3,10 @@ package com.mysocial.service;
 import com.mysocial.dto.ApiResponse;
 import com.mysocial.dto.message.request.MessageRequest;
 import com.mysocial.dto.message.response.ConversationSummary;
-import com.mysocial.model.Group;
-import com.mysocial.model.Message;
-import com.mysocial.model.User;
-import com.mysocial.repository.GroupRepository;
-import com.mysocial.repository.MessageRepository;
-import com.mysocial.repository.UserRepository;
+import com.mysocial.model.*;
+import com.mysocial.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,11 +23,16 @@ public class MessageService {
     private GroupRepository groupRepository;
     @Autowired
     private PresenceService presenceService;
+    @Autowired
+    private GroupMemberRepository groupMemberRepository;
+    @Autowired
+    private GroupMessageStatusRepository groupMessageStatusRepository;
 
     public ApiResponse<Message> saveMessage(MessageRequest request, User sender, String fileUrl){
         User receiver = null;
         Group group = null;
         Message message = new Message();
+        GroupMessageStatus groupMessageStatus = new GroupMessageStatus();
 
         if(request.getReceiverId() != null){
             receiver = userRepository.findById(request.getReceiverId()).orElseThrow(() -> new RuntimeException("User not found"));
@@ -39,6 +41,8 @@ public class MessageService {
         else{
             group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new RuntimeException("Group not found"));
             message.setGroup(group);
+            groupMessageStatus.setMessage(message);
+            groupMessageStatus.getUserIds().add(sender.getId());
         }
         message.setMessageType(request.getType());
         message.setDeleted(false);
@@ -55,7 +59,12 @@ public class MessageService {
             message.setReplyTo(messageRepository.findById(request.getReplyToId()).orElseThrow(() -> new RuntimeException("Message not found")));
         }
 
-        return new ApiResponse<>(201, "Success", LocalDateTime.now(),messageRepository.save(message));
+        Message response = messageRepository.save(message);
+        if(request.getGroupId()!=null){
+            groupMessageStatusRepository.save(groupMessageStatus);
+        }
+
+        return new ApiResponse<>(201, "Success", LocalDateTime.now(),response);
     }
 
     public List<ConversationSummary> getConversationsForUser(Long userId) {
@@ -99,30 +108,30 @@ public class MessageService {
         }
 
         // 2. Group: lấy các group user là thành viên
-        List<Group> groups = groupRepository.findAll().stream()
-                .filter(g -> g.getCreatedBy() != null && Objects.equals(g.getCreatedBy().getId(), userId))
-                .collect(Collectors.toList());
-        for (Group group : groups) {
-            List<Message> groupMsgs = messageRepository.findAll().stream()
-                    .filter(m -> m.getGroup() != null && Objects.equals(m.getGroup().getId(), group.getId()))
-                    .collect(Collectors.toList());
-            Optional<Message> lastMsgOpt = groupMsgs.stream().max(Comparator.comparing(Message::getCreatedAt));
-            Message lastMsg = lastMsgOpt.orElse(null);
-            int unread = (int) groupMsgs.stream()
-                    .filter(m -> m.getSender() != null && !Objects.equals(m.getSender().getId(), userId)
-                            && m.getStatus() != null && m.getStatus() != Message.MessageStatus.SEEN)
-                    .count();
-            boolean isDeleted = lastMsg != null && lastMsg.isDeleted();
-
-            result.add(new ConversationSummary(
-                    group.getId(), true,
-                    group.getGroupName(), group.getAvatarUrl(),
-                    lastMsg != null ? lastMsg.getContent() : null,
-                    lastMsg != null && lastMsg.getSender() != null ? lastMsg.getSender().getFirstName() : null,
-                    lastMsg != null && lastMsg.getCreatedAt() != null ? lastMsg.getCreatedAt().toString() : null,
-                    unread, false, isDeleted
-            ));
-        }
+//        List<Group> groups = groupRepository.findAll().stream()
+//                .filter(g -> g.getCreatedBy() != null && Objects.equals(g.getCreatedBy().getId(), userId))
+//                .collect(Collectors.toList());
+//        for (Group group : groups) {
+//            List<Message> groupMsgs = messageRepository.findAll().stream()
+//                    .filter(m -> m.getGroup() != null && Objects.equals(m.getGroup().getId(), group.getId()))
+//                    .collect(Collectors.toList());
+//            Optional<Message> lastMsgOpt = groupMsgs.stream().max(Comparator.comparing(Message::getCreatedAt));
+//            Message lastMsg = lastMsgOpt.orElse(null);
+//            int unread = (int) groupMsgs.stream()
+//                    .filter(m -> m.getSender() != null && !Objects.equals(m.getSender().getId(), userId)
+//                            && m.getStatus() != null && m.getStatus() != Message.MessageStatus.SEEN)
+//                    .count();
+//            boolean isDeleted = lastMsg != null && lastMsg.isDeleted();
+//
+//            result.add(new ConversationSummary(
+//                    group.getId(), true,
+//                    group.getGroupName(), group.getAvatarUrl(),
+//                    lastMsg != null ? lastMsg.getContent() : null,
+//                    lastMsg != null && lastMsg.getSender() != null ? lastMsg.getSender().getFirstName() : null,
+//                    lastMsg != null && lastMsg.getCreatedAt() != null ? lastMsg.getCreatedAt().toString() : null,
+//                    unread, false, isDeleted
+//            ));
+//        }
         // Sắp xếp theo thời gian gần nhất
         result.sort((a, b) -> {
             if (a.getTimestamp() == null) return 1;
@@ -130,6 +139,43 @@ public class MessageService {
             return b.getTimestamp().compareTo(a.getTimestamp());
         });
         return result;
+    }
+
+    public List<ConversationSummary> getGroupConversationForUser(User user){
+        List<ConversationSummary> result = new ArrayList<>();
+        List<GroupMember> members = groupMemberRepository.findByUserAndStatus(user, GroupMember.MemberStatus.ACTIVE);
+        for (GroupMember member: members) {
+            List<Message>  messages = messageRepository.findByGroupId(member.getGroup().getId());
+            Optional<Message> lastMsgOpt = messages.stream().max(Comparator.comparing(Message::getCreatedAt));
+            Message lastMsg = lastMsgOpt.orElse(null);
+
+            int unread = 0;
+
+            for (Message m: messages) {
+                GroupMessageStatus groupMessageStatus = groupMessageStatusRepository.findByMessage(m);
+                if(!groupMessageStatus.getUserIds().contains(user.getId())){
+                    unread++;
+                }
+            }
+            boolean isDeleted = lastMsg != null && lastMsg.isDeleted();
+
+            result.add(new ConversationSummary(
+                    member.getGroup().getId(), true,
+                    member.getGroup().getGroupName(), member.getGroup().getAvatarUrl(),
+                    lastMsg != null ? lastMsg.getContent() : null,
+                    lastMsg != null && lastMsg.getSender() != null ? lastMsg.getSender().getFirstName() : null,
+                    lastMsg != null && lastMsg.getCreatedAt() != null ? lastMsg.getCreatedAt().toString() : null,
+                    unread, false, isDeleted
+            ));
+        }
+        result.sort((a, b) -> {
+            if (a.getTimestamp() == null) return 1;
+            if (b.getTimestamp() == null) return -1;
+            return b.getTimestamp().compareTo(a.getTimestamp());
+        });
+
+        return result;
+
     }
 
     public List<Message> getMessagesBetweenUsers(Long userId1, Long userId2) {
@@ -154,6 +200,9 @@ public class MessageService {
             })
             .toList();
     }
+
+
+
 
     public List<Message> getMessagesBetweenUsersPaged(Long userId1, Long userId2, Long beforeMessageId, int size) {
         List<Message> all = messageRepository.findAll().stream()
@@ -184,6 +233,34 @@ public class MessageService {
         return all.stream().limit(size).collect(Collectors.toList());
     }
 
+    public List<Message> getMessagesBetweenUsersPagedGroup(User user, Long groupId, Long beforeMessageId, int size) {
+        List<Message> messages = messageRepository.findByGroupId(groupId)
+                .stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(m -> {
+                    if (m!= null && m.isDeleted()) {
+                        Message clone = new Message();
+                        clone.setId(m.getId());
+                        clone.setDeleted(true);
+                        clone.setSender(m.getSender());
+                        clone.setReceiver(m.getReceiver());
+                        clone.setCreatedAt(m.getCreatedAt());
+                        return clone;
+                    } else {
+                        return m;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        if (beforeMessageId != null) {
+            Optional<Message> beforeMsg = messages.stream().filter(m -> m.getId().equals(beforeMessageId)).findFirst();
+            if (beforeMsg.isPresent()) {
+                messages = messages.stream().filter(m -> m.getCreatedAt().isBefore(beforeMsg.get().getCreatedAt())).collect(Collectors.toList());
+            }
+        }
+        return messages.stream().limit(size).collect(Collectors.toList());
+    }
+
     // Khi user mở chat, cập nhật các tin nhắn chưa đọc thành SEEN
     public int markMessagesAsSeen(Long userId, Long friendId, LocalDateTime seenUntil) {
         List<Message> unread = messageRepository.findAll().stream()
@@ -198,7 +275,21 @@ public class MessageService {
             m.setStatus(Message.MessageStatus.SEEN);
             messageRepository.save(m);
         }
+
         return unread.size();
+    }
+
+    public int markMessagesAsSeenGroup(Long userId, Long groupId) {
+        int size = 0;
+        List<GroupMessageStatus> unread = groupMessageStatusRepository.findByGroupId(groupId);
+        for (GroupMessageStatus m : unread) {
+            if(!m.getUserIds().contains(userId)){
+                m.getUserIds().add(userId);
+                groupMessageStatusRepository.save(m);
+                size ++;
+            }
+        }
+        return size;
     }
 
     public ApiResponse<Message> revokeMessage(Long messageId, User user) {

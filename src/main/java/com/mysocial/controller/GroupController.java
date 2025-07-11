@@ -1,6 +1,7 @@
 package com.mysocial.controller;
 
 import com.mysocial.dto.group.AddMemberRequest;
+import com.mysocial.dto.group.AddMembersRequest;
 import com.mysocial.dto.group.CreateGroupRequest;
 import com.mysocial.model.Group;
 import com.mysocial.model.GroupMember;
@@ -29,6 +30,7 @@ public class GroupController {
         return ResponseEntity.ok(group);
     }
 
+
     // Lấy danh sách nhóm của user
     @GetMapping("")
     public ResponseEntity<List<Group>> getGroups(@RequestHeader("Authorization") String jwt) {
@@ -37,13 +39,24 @@ public class GroupController {
         return ResponseEntity.ok(groups);
     }
 
+    @GetMapping("/{groupId}")
+    public ResponseEntity<?> getMember(@PathVariable Long groupId){
+        return ResponseEntity.ok(groupService.getMemberByGroup(groupId));
+    }
+
     // Thêm thành viên vào nhóm
     @PostMapping("/{groupId}/members")
     public ResponseEntity<GroupMember> addMember(@PathVariable Long groupId, @RequestBody AddMemberRequest request) {
         GroupMember member = groupService.addMember(groupId, request.getUserId());
         return ResponseEntity.ok(member);
     }
-
+    @PostMapping("/{groupId}/members/add")
+    public ResponseEntity<?> addMembers(@PathVariable Long groupId, @RequestBody AddMembersRequest request) {
+        for (Long id: request.getUserIds()) {
+            groupService.addMember(groupId, id);
+        }
+        return ResponseEntity.ok("Success!");
+    }
     // Xóa thành viên khỏi nhóm
     @DeleteMapping("/{groupId}/members/{userId}")
     public ResponseEntity<?> removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
@@ -58,5 +71,5 @@ public class GroupController {
         return ResponseEntity.ok(members);
     }
 
-    // DTO request
+
 } 

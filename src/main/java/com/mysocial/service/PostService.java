@@ -7,15 +7,19 @@ import com.mysocial.dto.Comment.CommentTreeResponse;
 import com.mysocial.model.Post;
 import com.mysocial.model.PostReaction;
 import com.mysocial.model.User;
+import com.mysocial.repository.FriendshipRepository;
 import com.mysocial.repository.PostReactionRepository;
 import com.mysocial.repository.PostRepository;
 import com.mysocial.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -32,6 +36,9 @@ public class PostService {
 
     @Autowired
     private PostReactionRepository postReactionRepository;
+
+    @Autowired
+    private FriendshipRepository friendshipRepository;
 
     public ApiResponse<PostCreatedResponse> createPostHandler(User user, String caption, String location, String imageUrl, Post.Privacy privacy){
         Post post = new Post();
@@ -78,6 +85,20 @@ public class PostService {
         List<PostResponse> dtos = new java.util.ArrayList<>();
         for (Post post : posts) {
             dtos.add(toDto(post, currentUser));
+        }
+        return dtos;
+    }
+
+    public List<PostResponse> getUserFeed(User user, int page, int size) {
+        List<User> friends = friendshipRepository.findFriendsOf(user.getId());
+        List<Long> friendIds = friends.stream().map((f)->f.getId()).collect(Collectors.toList());
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Post> posts = postRepository.findFeedPosts(user.getId(), friendIds, pageable);
+        List<PostResponse> dtos = new java.util.ArrayList<>();
+        for (Post post : posts) {
+            dtos.add(toDto(post, user));
         }
         return dtos;
     }
