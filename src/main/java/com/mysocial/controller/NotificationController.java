@@ -20,9 +20,11 @@ public class NotificationController {
 
     // Lấy danh sách notification của user
     @GetMapping("")
-    public ResponseEntity<List<Notification>> getNotifications(@RequestHeader("Authorization") String jwt) {
+    public ResponseEntity<?> getNotifications(@RequestHeader("Authorization") String jwt,
+                                                               @RequestParam("size") int size,
+                                                               @RequestParam("page") int page) {
         User user = userService.findUserProfileByJwt(jwt);
-        return ResponseEntity.ok(notificationService.getNotificationsByUser(user));
+        return ResponseEntity.ok(notificationService.getNotificationsByUser(user, size, page));
     }
 
     // Lấy danh sách notification chưa đọc

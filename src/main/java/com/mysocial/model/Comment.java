@@ -22,6 +22,7 @@ public class Comment {
     private boolean isDeleted;
     private String image;
     private String sticker;
+    private boolean isHashtag = false;
 
     @ManyToOne
     @JoinColumn(name = "post_id")

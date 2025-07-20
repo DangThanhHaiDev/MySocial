@@ -1,5 +1,6 @@
 package com.mysocial.controller;
 
+import com.mysocial.dto.user.response.FriendSuggestionResponse;
 import com.mysocial.model.Friendship;
 import com.mysocial.model.User;
 import com.mysocial.model.Notification;
@@ -70,11 +71,7 @@ public class FriendshipController {
         return friendshipService.getFriends(user);
     }
 
-    @GetMapping("/suggest")
-    public List<User> suggestFriends(@RequestHeader("Authorization") String jwt) {
-        User user = userService.findUserProfileByJwt(jwt);
-        return friendshipService.suggestFriends(user);
-    }
+
 
     @GetMapping("/requests")
     public List<Friendship> getPendingRequests(@RequestHeader("Authorization") String jwt) {
@@ -146,5 +143,29 @@ public class FriendshipController {
     public ResponseEntity<?> getMutualFriends(@RequestHeader("Authorization") String jwt, @PathVariable Long userId){
         User user = userService.findUserProfileByJwt(jwt);
         return ResponseEntity.ok(friendshipService.getMutualFriends(user.getId(), userId));
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<FriendSuggestionResponse> getFriendSuggestions(
+            @RequestHeader("Authorization") String jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        User user = userService.findUserProfileByJwt(jwt);
+
+        try {
+            FriendSuggestionResponse response = friendshipService
+                    .getFriendSuggestions(user.getId(), page, size);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/group/friend/{groupId}")
+    public List<User> getFriendForGroup(@RequestHeader("Authorization") String jwt,
+                                        @PathVariable("groupId") Long groupId){
+        User user = userService.findUserProfileByJwt(jwt);
+
+        return friendshipService.getFriendsForGroup(user, groupId);
     }
 } 

@@ -1,9 +1,13 @@
 package com.mysocial.service;
 
+import com.mysocial.dto.PagedResponse;
 import com.mysocial.model.Notification;
 import com.mysocial.model.User;
 import com.mysocial.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +22,11 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    public List<Notification> getNotificationsByUser(User user) {
-        return notificationRepository.findByUserOrderByCreatedAtDesc(user);
+    public PagedResponse<Notification> getNotificationsByUser(User user, int size, int page) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Notification> notificationPage = notificationRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+
+        return new PagedResponse<>(notificationPage);
     }
 
     public List<Notification> getUnreadNotificationsByUser(User user) {

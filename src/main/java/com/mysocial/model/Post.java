@@ -29,6 +29,9 @@ public class Post {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostImage> images;
+
     @OneToMany(mappedBy = "post")
     private List<PostReaction> reactions;
 

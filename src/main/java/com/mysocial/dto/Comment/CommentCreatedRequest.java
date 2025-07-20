@@ -11,4 +11,5 @@ public class CommentCreatedRequest {
     private Long id;
     private String content;
     private Long parentId;
+    private boolean hashtag  = false;
 }

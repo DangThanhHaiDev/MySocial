@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class PostReactionService {
@@ -93,5 +94,8 @@ public class PostReactionService {
     public int getReactionCountByPostId(Long postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         return (int) postReactionRepository.countByPost(post);
+    }
+    public List<PostReaction> getReactionByPost(Long postId){
+        return postReactionRepository.findByPost(postRepository.findById(postId).orElseThrow());
     }
 }

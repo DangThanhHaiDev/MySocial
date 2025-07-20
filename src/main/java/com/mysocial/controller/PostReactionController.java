@@ -27,4 +27,8 @@ public class PostReactionController {
         User user = userService.findUserProfileByJwt(jwt);
         return new ResponseEntity<>(postReactionService.deleteEmotionPost(post_id, user), HttpStatus.OK);
     }
+    @GetMapping("/{postId}")
+    public ResponseEntity<?> getReactionByPost(@PathVariable Long postId){
+        return ResponseEntity.ok(postReactionService.getReactionByPost(postId));
+    }
 }

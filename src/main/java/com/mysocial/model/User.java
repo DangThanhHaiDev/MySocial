@@ -29,8 +29,12 @@ public class User {
     private String address;
     private String biography;
     private Role role;
+    private String status; // ACTIVE, BANNED
 
     public enum Role{
         CUSTOMER, ADMIN
     }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

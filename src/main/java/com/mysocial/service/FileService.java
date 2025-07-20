@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,7 @@ public class FileService {
 
 
     private static final String UPLOAD_DIR_ICON = "uploads/icon/";
-    private static final String UPLOAD_DIR_MESSAGE = "/uploads/message";
+    private static final String UPLOAD_DIR_MESSAGE = "uploads/message";
     private final Path uploadDir = Paths.get(UPLOAD_DIR_MESSAGE);
 
 
@@ -119,6 +120,14 @@ public class FileService {
         return "/uploads/message/" + filename;
     }
 
+    public List<String> saveImages(List<MultipartFile> files) throws IOException {
+        List<String> urls = new ArrayList<>();
+        for (MultipartFile file : files) {
+            urls.add(saveImage(file));
+        }
+        return urls;
+    }
+
     public String saveBase64File(String base64, String fileName) {
         try {
             if (!Files.exists(uploadDir)) {
@@ -127,7 +136,8 @@ public class FileService {
             byte[] decodedBytes = Base64.getDecoder().decode(base64);
             Path path = uploadDir.resolve(UUID.randomUUID() + "_" + fileName);
             Files.write(path, decodedBytes);
-            return "/uploads/" + path.getFileName().toString();
+            System.out.println("Saving file to: " + path.toAbsolutePath());
+            return "/uploads/message/" + path.getFileName().toString();
         } catch (IOException e) {
             throw new RuntimeException("Không thể lưu file", e);
         }

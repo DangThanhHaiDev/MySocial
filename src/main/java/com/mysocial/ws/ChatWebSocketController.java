@@ -1,6 +1,7 @@
 package com.mysocial.ws;
 
 import com.mysocial.dto.ApiResponse;
+import com.mysocial.dto.PagedResponse;
 import com.mysocial.dto.message.request.MessageDeletedReactionRequest;
 import com.mysocial.dto.message.request.MessageReactionDTO;
 import com.mysocial.dto.message.request.MessageReactionRequest;
@@ -167,23 +168,23 @@ public class ChatWebSocketController {
     }
 
     @GetMapping("/api/messages/history")
-    public List<Message> getHistory(@RequestHeader("Authorization") String jwt,
-                                    @RequestParam Long userId,
-                                    @RequestParam(required = false) Long beforeMessageId,
-                                    @RequestParam(defaultValue = "20") int size) {
+    public PagedResponse<Message> getHistory(@RequestHeader("Authorization") String jwt,
+                                             @RequestParam Long userId,
+                                             @RequestParam(required = false) Long beforeMessageId,
+                                             @RequestParam(defaultValue = "20") int size) {
         User me = userService.findUserProfileByJwt(jwt);
         LocalDateTime now = LocalDateTime.now();
         messageService.markMessagesAsSeen(me.getId(), userId, now);
         return messageService.getMessagesBetweenUsersPaged(me.getId(), userId, beforeMessageId, size);
     }
     @GetMapping("/api/messages/history/group")
-    public List<Message> getHistoryGroup(@RequestHeader("Authorization") String jwt,
+    public PagedResponse<Message> getHistoryGroup(@RequestHeader("Authorization") String jwt,
                                     @RequestParam Long groupId,
                                     @RequestParam(required = false) Long beforeMessageId,
                                     @RequestParam(defaultValue = "20") int size) {
         User me = userService.findUserProfileByJwt(jwt);
         LocalDateTime now = LocalDateTime.now();
         messageService.markMessagesAsSeenGroup(me.getId(), groupId);
-        return messageService.getMessagesBetweenUsersPagedGroup(me, groupId, beforeMessageId, size);
+        return messageService.getMessagesBetweenUsersPagedGroupPaged(me, groupId, beforeMessageId, size);
     }
 }

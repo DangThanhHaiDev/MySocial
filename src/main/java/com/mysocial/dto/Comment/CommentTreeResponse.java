@@ -14,6 +14,7 @@ public class CommentTreeResponse {
     private UserInfo user;
     private List<CommentTreeResponse> children;
     private boolean deleted;
+    private boolean isHashtag;
     private List<CommentReactionDto> reactions;
     private CommentTreeResponse parent;
 

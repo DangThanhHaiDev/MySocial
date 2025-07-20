@@ -38,4 +38,6 @@ public class RegisterRequest {
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^(\\+84|0)(3|5|7|8|9)[0-9]{8}$", message = "Please provide a valid Vietnamese phone number")
     private String phone;
+
+    private String province;
 }

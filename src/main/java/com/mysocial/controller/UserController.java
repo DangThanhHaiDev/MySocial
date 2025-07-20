@@ -5,6 +5,7 @@ import com.mysocial.dto.ApiResponse;
 import com.mysocial.dto.auth.response.LoginResponse;
 import com.mysocial.dto.auth.response.UserInfoResponse;
 import com.mysocial.dto.user.request.UserUpdateRequest;
+import com.mysocial.dto.user.response.UserSearchResponse;
 import com.mysocial.mapper.UserMapper;
 import com.mysocial.model.Post;
 import com.mysocial.model.User;
@@ -58,6 +59,7 @@ public class UserController {
         response.setStatus(200);
         response.setMessage("Get user success");
         response.setToken(token);
+        response.setRole(user.getRole());
         return new ApiResponse<>(200, "Get user success", LocalDateTime.now(), response);
     }
     @PutMapping
@@ -84,5 +86,15 @@ public class UserController {
         }
         postService.createPostAvatar(user, imageUrl, caption, privacy);
         return ResponseEntity.ok(userService.updateAvatar(user, imageUrl));
+    }
+    @GetMapping("/search")
+    public ResponseEntity<UserSearchResponse> searchUsers(
+            @RequestHeader("Authorization") String jwt,
+            @RequestParam(required = false, defaultValue = "") String searchTerm,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        User user = userService.findUserProfileByJwt(jwt);
+        UserSearchResponse response = userService.searchUsers(user.getId(), searchTerm, page, size);
+        return ResponseEntity.ok(response);
     }
 }

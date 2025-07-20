@@ -11,7 +11,7 @@ public interface UserMapper {
     @Mapping(target = "role", constant = "CUSTOMER")
     @Mapping(target = "avatarUrl", ignore = true)
     @Mapping(target = "password", ignore = true)
-    @Mapping(target = "address", ignore = true)
+    @Mapping(target = "address", source = "province")
     @Mapping(target = "biography", ignore = true)
     @Mapping(target = "email", source = "email")
     @Mapping(target = "firstName", source = "firstName")

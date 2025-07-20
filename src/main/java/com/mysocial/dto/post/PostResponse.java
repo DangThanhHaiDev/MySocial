@@ -15,7 +15,8 @@ public class PostResponse {
     private boolean deleted;
     private UserInfo user;
     private List<CommentTreeResponse> comments;
-    // Có thể thêm reactions nếu FE cần
+    private List<String> images;
+
     private String currentUserReactionType;
     private int reactionCount;
     private boolean isAvatar;

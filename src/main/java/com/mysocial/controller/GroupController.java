@@ -57,7 +57,6 @@ public class GroupController {
         }
         return ResponseEntity.ok("Success!");
     }
-    // Xóa thành viên khỏi nhóm
     @DeleteMapping("/{groupId}/members/{userId}")
     public ResponseEntity<?> removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
         groupService.removeMember(groupId, userId);

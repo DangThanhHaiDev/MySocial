@@ -71,6 +71,11 @@ public class GroupService {
     public GroupMember addMember(Long groupId, Long userId) {
         Group group = groupRepository.findById(groupId).orElseThrow();
         User user = userRepository.findById(userId).orElseThrow();
+        GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user);
+        if(groupMember != null){
+            groupMember.setStatus(GroupMember.MemberStatus.ACTIVE);
+            return groupMemberRepository.save(groupMember);
+        }
         GroupMember member = new GroupMember();
         member.setGroup(group);
         member.setUser(user);

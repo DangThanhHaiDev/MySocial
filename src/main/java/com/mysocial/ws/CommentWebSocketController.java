@@ -121,12 +121,10 @@ public class CommentWebSocketController {
         User user = userService.findUserProfileByJwt(jwt);
         ApiResponse<Comment> response = commentService.createCommentHandeler(request, user, postId);
 
-        // Create enhanced response with action type
         Map<String, Object> wsResponse = new HashMap<>();
         wsResponse.put("action", "add");
         wsResponse.put("data", response.getData());
 
-        // Add parentId if this is a reply
         if (request.getParentId() != null) {
             wsResponse.put("isReply", true);
             wsResponse.put("parentId", request.getParentId());

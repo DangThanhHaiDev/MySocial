@@ -46,6 +46,7 @@ public class AuthService {
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         User userSaved = userRepository.save(user);
+        user.setStatus("ACTIVE");
 
         RegisterResponse response = new RegisterResponse();
         response.setStatus(201);
@@ -61,8 +62,11 @@ public class AuthService {
         Authentication authentication = authenticated(request.getEmail(), request.getPassword());
         String token = jwtProvider.generateToken(authentication);
         User user = userRepository.findByEmail(request.getEmail()).get();
+        if ("BANNED".equals(user.getStatus())) {
+            throw new InvalidCredentialsException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.");
+        }
         LoginResponse response = new LoginResponse(200, "Login success", token, new UserInfoResponse(user.getId(),user.getPhone(), user.getEmail(), user.getFirstName(),
-                user.getLastName(), user.getBirthDate(), user.isGender(), user.getRole(), user.getAvatarUrl(), user.getBiography(), user.getAddress()));
+                user.getLastName(), user.getBirthDate(), user.isGender(), user.getRole(), user.getAvatarUrl(), user.getBiography(), user.getAddress()), user.getRole());
         return response;
 
     }

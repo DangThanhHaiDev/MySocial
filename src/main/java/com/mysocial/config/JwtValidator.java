@@ -13,6 +13,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JwtValidator extends OncePerRequestFilter {
 
@@ -25,9 +29,12 @@ public class JwtValidator extends OncePerRequestFilter {
             try {
                 Claims claims = Jwts.parser().setSigningKey(Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes())).build().parseClaimsJws(jwt).getBody();
                 email = String.valueOf(claims.get("email"));
-                if (email != "" || email.isEmpty()) {
+                String role = String.valueOf(claims.get("role"));
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                if (role != null && !role.isEmpty() && !role.equals("null")) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
                 }
-                Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, null);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
                 response.sendRedirect("/login");

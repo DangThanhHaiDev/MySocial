@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.mysocial.service.CommentReactionService;
 import com.mysocial.dto.reaction.CommentReactionDto;
+import com.mysocial.util.BadWordFilter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,13 +32,16 @@ public class CommentService {
     private NotificationWebSocketController notificationWebSocketController;
 
     public ApiResponse<Comment> createCommentHandeler(CommentCreatedRequest request, User user, Long post_id){
-
+        if (BadWordFilter.containsBadWords(request.getContent())) {
+            throw new RuntimeException("Bình luận chứa từ ngữ không phù hợp!");
+        }
         Comment comment = new Comment();
         comment.setContent(request.getContent());
         comment.setCreatedAt(LocalDateTime.now());
         comment.setDeleted(false);
         comment.setUser(user);
         comment.setPost(postRepository.findById(post_id).orElseThrow(() -> new RuntimeException("Post not found")));
+        comment.setHashtag(request.isHashtag());
         if (request.getParentId() != null) {
             Comment parent = commentRepository.findById(request.getParentId()).orElse(null);
             comment.setParent(parent);
@@ -92,6 +96,7 @@ public class CommentService {
         dto.setContent(comment.getContent());
         dto.setCreatedAt(comment.getCreatedAt() != null ? comment.getCreatedAt().toString() : null);
         dto.setDeleted(comment.isDeleted());
+        dto.setHashtag(comment.isHashtag());
         // User info
         CommentTreeResponse.UserInfo userInfo = new CommentTreeResponse.UserInfo();
         if (comment.getUser() != null) {
